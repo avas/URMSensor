@@ -82,14 +82,6 @@ enum URMState
 	FinishedMeasure
 };
 
-enum URMErrorCodes
-{
-	NoError,
-	EchoIsAlreadyActive,
-	DidNotReceivePulse,
-	PulseTimeout
-};
-
 /**
  * A class representing single ultrasonic ranging sensor.
  *
@@ -379,12 +371,12 @@ class URMSensor
 			return _currentDuration;
 		}
 		
-		byte _currentState;
-		
 		unsigned long convertCurrentDurationToDistance()
 		{
 			return _currentDuration / _usPerCm;
 		}
+
+		byte _currentState;
 };
 
 class URM37 : public URMSensor

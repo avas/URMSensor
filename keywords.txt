@@ -1,0 +1,58 @@
+###########################################
+# Syntax Coloring Map For URMSensor Library
+###########################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+URMSensor	KEYWORD1
+URM37		KEYWORD1
+HC_SR04		KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+attach				KEYWORD2
+detach				KEYWORD2
+isAttached			KEYWORD2
+
+startMeasure		KEYWORD2
+isMeasuring			KEYWORD2
+interruptMeasure	KEYWORD2
+refreshState		KEYWORD2
+finishedMeasure		KEYWORD2
+getMeasuredDistance	KEYWORD2
+
+measureDistance		KEYWORD2
+
+getState			KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+URM_INVALID_VALUE				LITERAL1
+
+Idle							LITERAL1
+WaitingForPulse					LITERAL1
+Measuring						LITERAL1
+FinishedMeasure					LITERAL1
+	
+URM37_US_PER_CM					LITERAL1
+URM37_TRIG_ACTIVE_STATE			LITERAL1
+URM37_ECHO_ACTIVE_STATE			LITERAL1
+URM37_TRIG_PULSE_WIDTH			LITERAL1
+URM37_TIMEOUT_FOR_PULSE_START	LITERAL1
+URM37_MAX_PULSE_WIDTH			LITERAL1
+
+HC_SR04_US_PER_CM				LITERAL1
+HC_SR04_TRIG_ACTIVE_STATE		LITERAL1
+HC_SR04_ECHO_ACTIVE_STATE		LITERAL1
+HC_SR04_TRIG_PULSE_WIDTH		LITERAL1
+HC_SR04_TIMEOUT_FOR_PULSE_START	LITERAL1
+HC_SR04_MAX_PULSE_WIDTH			LITERAL1
