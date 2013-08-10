@@ -1,7 +1,5 @@
 #include "URMSensor.h"
 
-#include "HardwareSerial.h"
-
 void URMSensor::startMeasure()
 {
 	// Ignoring the call if this instance already started measuring the distance.
@@ -19,12 +17,9 @@ void URMSensor::startMeasure()
 	// Starting the measure 
 	_currentState = WaitingForPulse;
 	
-	digitalWrite(_trigPin, _trigActiveState);
+	fastDigitalWriteTrig(_trigActiveState);
 	delayMicroseconds(_trigPulseWidth);
-	digitalWrite(_trigPin, getOppositeStateFor(_trigActiveState));
-	
-	digitalWrite(11, getOppositeStateFor(_echoActiveState));
-	digitalWrite(8, LOW);
+	fastDigitalWriteTrig(getOppositeStateFor(_trigActiveState));
 	
 	resetTime();
 	refreshState();
@@ -42,9 +37,7 @@ void URMSensor::interruptMeasure()
 
 void URMSensor::refreshState()
 {
-	digitalWrite(12, HIGH);
-
-	byte echoState = digitalRead(_echoPin);
+	byte echoState = fastDigitalReadEcho();
 
 	switch (_currentState)
 	{
@@ -53,14 +46,11 @@ void URMSensor::refreshState()
 				(echoState != _echoActiveState))
 			{
 				_currentState = Idle;
-				digitalWrite(8, HIGH);
 			}
 			else if (echoState == _echoActiveState)
 			{
 				_currentState = Measuring;
 				resetTime();
-				
-				digitalWrite(11, _echoActiveState);
 			}
 			break;
 			
@@ -69,12 +59,10 @@ void URMSensor::refreshState()
 				(echoState == _echoActiveState))
 			{
 				_currentState = Idle;
-				digitalWrite(8, HIGH);
 			}
 			else if (echoState != _echoActiveState)
 			{
 				_currentState = FinishedMeasure;
-				digitalWrite(11, getOppositeStateFor(_echoActiveState));
 			}
 			break;
 			
@@ -83,17 +71,15 @@ void URMSensor::refreshState()
 		default:
 			break;
 	}
-	
-	digitalWrite(12, LOW);
 }
 
-boolean URMSensor::finishedMeasure(unsigned long* distance)
+boolean URMSensor::finishedMeasure(unsigned long& distance)
 {
 	// If this instance haven't been attach()'d, reporting failure.
 	if (!isAttached()) 
 	{
 		_currentState = Idle;
-		*distance = URM_INVALID_VALUE;
+		distance = URM_INVALID_VALUE;
 		return true;
 	}
 
@@ -102,7 +88,7 @@ boolean URMSensor::finishedMeasure(unsigned long* distance)
 	if (isMeasuring()) return false;
 	
 	// ...and, if this instance isn't doing measure anymore, return appropriate value.
-	*distance = getMeasuredDistance();
+	distance = getMeasuredDistance();
 	return true;
 }
 
@@ -129,7 +115,7 @@ unsigned long URMSensor::measureDistance()
 	startMeasure();
 	
 	unsigned long distance;
-	while (!finishedMeasure(&distance)) ;
+	while (!finishedMeasure(distance)) ;
 	
 	return distance;
 }

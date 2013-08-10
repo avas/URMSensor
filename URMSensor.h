@@ -4,12 +4,6 @@
 #include "Arduino.h"
 
 /**
- * Marker value that is used to mark unassigned pin. It is used internally by the URMSensor class;
- * most probably you will not need it in your code.
- */
-#define URM_INVALID_PIN 255
-
-/**
  * Value that marks invalid result of the measure. Receiving this value as the measurement result
  * usually means that the URMSensor class either detected invalid state of the sensor pins on 
  * startMeasure() call, timed out waiting for sensor's response when starting measure, or
@@ -17,6 +11,13 @@
  */
 #define URM_INVALID_VALUE 0xFFFFFFFF
 
+/**
+ * Unlocks direct work with port registers instead of digitalRead() and digitalWrite().
+ * This will make refreshState() and finishedMeasure() to work a bit faster (for about 5-10 us), 
+ * but the URMSensor class will consume more RAM (about 12 bytes per instance), and the code 
+ * will no more be compatible with Arduino Due.
+ */
+#define URM_USE_PORTS_DIRECTLY
 
 
 /**
@@ -102,8 +103,7 @@ class URMSensor
 		 */
 		URMSensor()
 		{
-			_trigPin = URM_INVALID_PIN;
-			_echoPin = URM_INVALID_PIN;
+			_isAttached = false;
 		}
 		
 		
@@ -132,11 +132,8 @@ class URMSensor
 			unsigned long maxPulseDuration, byte trigActiveState, byte echoActiveState,
 			unsigned int trigPulseWidth)
 		{
-			_trigPin = trigPin;
-			_echoPin = echoPin;
-			
-			pinMode(trigPin, OUTPUT);
-			pinMode(echoPin, INPUT);
+			setTrigPin(trigPin);
+			setEchoPin(echoPin);
 			
 			_usPerCm = usPerCm;
 			
@@ -147,6 +144,8 @@ class URMSensor
 			_echoActiveState = echoActiveState;
 			
 			_trigPulseWidth = trigPulseWidth;
+			
+			_isAttached = true;
 		}
 			
 		/**
@@ -156,8 +155,7 @@ class URMSensor
 		 */
 		void detach()
 		{
-			_trigPin = URM_INVALID_PIN;
-			_echoPin = URM_INVALID_PIN;
+			_isAttached = false;
 		}
 		
 		/**
@@ -167,7 +165,7 @@ class URMSensor
 		 */
 		boolean isAttached()
 		{
-			return (_trigPin != URM_INVALID_PIN) && (_echoPin != URM_INVALID_PIN);
+			return _isAttached;
 		}
 		
 		
@@ -210,7 +208,7 @@ class URMSensor
 		 *
 		 * @return true if this instance is not currently measuring the distance.
 		 */
-		boolean finishedMeasure(unsigned long* distance);
+		boolean finishedMeasure(unsigned long& distance);
 		
 		/**
 		 * Simply retrieves the value from the previous measure.
@@ -248,8 +246,108 @@ class URMSensor
 		}
 		
 	private:
+		boolean _isAttached;
+		
+	#ifndef URM_USE_PORTS_DIRECTLY
 		byte _trigPin;
 		byte _echoPin;
+	#else	
+		byte _trigMask;
+		volatile byte* _trigPORT;
+		volatile byte* _trigPIN;
+		volatile byte* _trigDDR;
+		
+		byte _echoMask;
+		volatile byte* _echoPORT;
+		volatile byte* _echoPIN;
+		volatile byte* _echoDDR;
+	#endif
+	
+		void setTrigPin(byte trigPin)
+		{
+		#ifdef URM_USE_PORTS_DIRECTLY
+			_trigMask = digitalPinToBitMask(trigPin);
+			
+			byte trigPortIndex = digitalPinToPort(trigPin);
+			_trigPORT = portOutputRegister(trigPortIndex);
+			_trigPIN = portInputRegister(trigPortIndex);
+			_trigDDR = portModeRegister(trigPortIndex);
+		#else
+			_trigPin = trigPin;
+		#endif
+
+			setTrigMode(OUTPUT);
+		}
+		
+		byte fastDigitalReadTrig()
+		{
+			byte state = LOW;
+			setTrigMode(INPUT);
+			
+		#ifdef URM_USE_PORTS_DIRECTLY
+			return ((*_trigPIN & _trigMask) != 0) ? HIGH : LOW;
+		#else
+			state = digitalRead(_trigPin);
+		#endif
+		
+			setTrigMode(OUTPUT);
+			return state;
+		}
+		
+		void setTrigMode(byte newMode)
+		{
+		#ifdef URM_USE_PORTS_DIRECTLY
+			if (newMode == OUTPUT)
+			{
+				*_trigDDR |= _trigMask;
+			}
+			else
+			{
+				*_trigDDR &= ~_trigMask;
+			}
+		#else
+			pinMode(_trigPin, newMode);
+		#endif
+		}
+		
+		void fastDigitalWriteTrig(byte value)
+		{
+		#ifdef URM_USE_PORTS_DIRECTLY
+			if (value == HIGH)
+				*_trigPORT |= _trigMask;
+			else
+				*_trigPORT &= ~_trigMask;
+		#else
+			digitalWrite(_trigPin, value);
+		#endif
+		}
+		
+		void setEchoPin(byte echoPin)
+		{
+		#ifdef URM_USE_PORTS_DIRECTLY
+			_echoMask = digitalPinToBitMask(echoPin);
+			
+			byte echoPortIndex = digitalPinToPort(echoPin);
+			_echoPORT = portOutputRegister(echoPortIndex);
+			_echoPIN = portInputRegister(echoPortIndex);
+			_echoDDR = portModeRegister(echoPortIndex);
+			
+			*_echoDDR &= ~_echoMask;
+			*_echoPORT &= ~_echoMask;
+		#else
+			_echoPin = echoPin;
+			pinMode(_echoPin, INPUT);
+		#endif
+		}
+		
+		byte fastDigitalReadEcho()
+		{
+		#ifdef URM_USE_PORTS_DIRECTLY
+			return ((*_echoPIN & _echoMask) != 0) ? HIGH : LOW;
+		#else
+			return digitalRead(_echoPin);
+		#endif
+		}
 		
 		int _usPerCm;
 		
@@ -300,7 +398,7 @@ class URM37 : public URMSensor
 		}
 };
 
-class SR04 : public URMSensor
+class HC_SR04 : public URMSensor
 {
 	public:
 		void attach(byte trigPin, byte echoPin)
