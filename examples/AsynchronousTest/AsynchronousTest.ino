@@ -173,7 +173,7 @@ void handleMeasurementResults()
  * CHANGEME: try replacing this value with any multiple of 256. The less this value will be,
  *           the more time-critical managePWM() function will become.
  */
-#define PWM_PERIOD_US 256
+#define PWM_PERIOD_US 1024
 // ===============================================================================================
 
 /**
