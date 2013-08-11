@@ -43,13 +43,13 @@
 // Built-in LED used to indicate the activity.
 #define LED 13
 
-#define TEST_PIN 12
-
 // Instance of the class representing your ultrasonic sensor.
-// Uncomment one of the following lines to select which sensor you will use.
+// ===================================================================================
+// CHANGEME: Uncomment one of the following lines to select which sensor you will use.
 
 // HC_SR04 sensor;
 URM37 sensor;
+// ===================================================================================
 
 
 void setup()
@@ -59,8 +59,6 @@ void setup()
   
   // Initializing the LED to be able to blink.
   pinMode(LED, OUTPUT);
-  
-  pinMode(TEST_PIN, OUTPUT);
   
   // Initializing the serial port...
   TERMINAL.begin(9600);
