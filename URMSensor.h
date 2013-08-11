@@ -190,17 +190,12 @@ class URMSensor
 		void refreshState();
 		
 		/**
-		 * Indicates whether this instance finished the measure. Note that this method will NOT
-		 * start a new measurement - it will just return the value from the previous measurement.
-		 *
-		 * @param distance Pointer to the variable to store the distance to. If this method 
-		 * returns false, the value of the pointed variable will remain unchanged. 
-		 * If this library failed to read distance for some reason, this method will store
-		 * URM_INVALID_VALUE here.
+		 * Indicates whether this instance finished the measure. If this method returned true,
+		 * you can retrieve measured distance by calling getMeasuredDistance().
 		 *
 		 * @return true if this instance is not currently measuring the distance.
 		 */
-		boolean finishedMeasure(unsigned long& distance);
+		boolean finishedMeasure();
 		
 		/**
 		 * Simply retrieves the value from the previous measure.

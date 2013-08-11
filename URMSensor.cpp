@@ -7,14 +7,14 @@ void URMSensor::startMeasure()
 	
 	// Failing the measure if this instance is not attached to the sensor, or the ECHO pin
 	// is not in IDLE state.
-	if (!isAttached())// || 
-		//(digitalRead(_echoPin) == _echoActiveState))
+	if (!isAttached() || 
+		(fastDigitalReadEcho() == _echoActiveState))
 	{
 		_currentState = Idle;
 		return;
 	}
 
-	// Starting the measure 
+	// Starting the measure.
 	_currentState = WaitingForPulse;
 	
 	fastDigitalWriteTrig(_trigActiveState);
@@ -73,23 +73,20 @@ void URMSensor::refreshState()
 	}
 }
 
-boolean URMSensor::finishedMeasure(unsigned long& distance)
+boolean URMSensor::finishedMeasure()
 {
 	// If this instance haven't been attach()'d, reporting failure.
-	if (!isAttached()) 
+	if (!_isAttached) 
 	{
 		_currentState = Idle;
-		distance = URM_INVALID_VALUE;
 		return true;
 	}
 
 	// Now we'll poll data and refresh state...
 	refreshState();
-	if (isMeasuring()) return false;
 	
-	// ...and, if this instance isn't doing measure anymore, return appropriate value.
-	distance = getMeasuredDistance();
-	return true;
+	// ...and tell the user whether we are finished the work or not.
+	return (!isMeasuring());
 }
 
 unsigned long URMSensor::getMeasuredDistance()
@@ -114,9 +111,8 @@ unsigned long URMSensor::measureDistance()
 {
 	startMeasure();
 	
-	unsigned long distance;
-	while (!finishedMeasure(distance)) ;
+	while (!finishedMeasure()) ;
 	
-	return distance;
+	return getMeasuredDistance();
 }
 		
